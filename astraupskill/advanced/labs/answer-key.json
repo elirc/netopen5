@@ -1,0 +1,17 @@
+{
+  "JF-P1": 1073741823,
+  "JF-P2": 1073741824,
+  "JF-P3": {
+    "userLookups": 0,
+    "viewCalls": 0,
+    "dtoCalls": 0
+  },
+  "JF-P4": {
+    "limit": 20,
+    "groupItems": true
+  },
+  "JF-P5": false,
+  "JF-P6": false,
+  "JF-P7": false,
+  "JF-P8": false
+}
