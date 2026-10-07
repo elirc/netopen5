@@ -6,7 +6,13 @@ The valid theory includes the largest safe value without allocating that many it
 
 The legacy test suppresses the obsolete warning only around the compatibility call. It does not remove the production obsolete marker or weaken project-wide warnings. The default test omits the optional limit and grouping parameters and checks their preserved values.
 
-When a test fails, identify the boundary first. A strict mock exception on invalid input means validation occurred too late or not at all. A failed query predicate on valid input means the controller changed a forwarded value. A compilation or restore error is setup evidence, not a failing request assertion. Run the focused class using the recorded SDK and command, then retain the actual terminal result in the verification chapter.
+When a test fails, identify the boundary first. A strict mock exception on invalid input means validation occurred too late or not at all. A failed query predicate on valid input means the controller changed a forwarded value. A compilation or restore error is setup evidence, not a failing request assertion. Run the focused class from the `jellyfin` folder (the SDK is pinned to 10.0.x by `jellyfin/global.json`):
+
+```powershell
+dotnet test tests/Jellyfin.Api.Tests/Jellyfin.Api.Tests.csproj --filter "FullyQualifiedName~UserLibraryLatestMediaTests"
+```
+
+Expect `Passed: 10`. That is 5 invalid cases, 1 legacy case, 3 valid cases and 1 default case. A first run must restore and build the whole API test project, so drop the recorded `--no-restore` unless you have already restored.
 
 ## Source excerpt
 

@@ -8,23 +8,13 @@ Valid-limit tests supply an authenticated test principal and a known user. The v
 
 The omitted-limit case calls the method without the optional arguments and expects twenty with grouping enabled. That is distinct from passing twenty explicitly: it protects the signature's default contract. None of these tests creates or modifies a real media library, and the invalid tests need no user fixture because the guard must exit before user resolution.
 
-## Source excerpt
+## Before and after
 
-From [jellyfin/Jellyfin.Api/Controllers/UserLibraryController.cs](../jellyfin/Jellyfin.Api/Controllers/UserLibraryController.cs).
+Compare the [snapshot of the original controller](snapshots/jellyfin__Jellyfin.Api__Controllers__UserLibraryController.cs.original.txt) (lines 521-540) with the current file (`jellyfin/Jellyfin.Api/Controllers/UserLibraryController.cs:521-548`). The whole production diff is two additions:
 
 ```cs
-    public ActionResult<IEnumerable<BaseItemDto>> GetLatestMedia(
-        [FromQuery] Guid? userId,
-        [FromQuery] Guid? parentId,
-        [FromQuery, ModelBinder(typeof(CommaDelimitedCollectionModelBinder))] ItemFields[] fields,
-        [FromQuery, ModelBinder(typeof(CommaDelimitedCollectionModelBinder))] BaseItemKind[] includeItemTypes,
-        [FromQuery] bool? isPlayed,
-        [FromQuery] bool? enableImages,
-        [FromQuery] int? imageTypeLimit,
-        [FromQuery, ModelBinder(typeof(CommaDelimitedCollectionModelBinder))] ImageType[] enableImageTypes,
-        [FromQuery] bool? enableUserData,
-        [FromQuery] int limit = 20,
-        [FromQuery] bool groupItems = true)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]   // new metadata line, after the 200 one
+    ...
     {
         // The library query doubles this value when fetching candidate groups.
         if (limit <= 0 || limit > int.MaxValue / 2)
@@ -32,27 +22,10 @@ From [jellyfin/Jellyfin.Api/Controllers/UserLibraryController.cs](../jellyfin/Je
             return BadRequest("Limit must be between 1 and 1073741823.");
         }
 
-        var requestUserId = RequestHelpers.GetUserId(User, userId);
-        var user = _userManager.GetUserById(requestUserId);
-        if (user is null)
-        {
-            return NotFound();
-        }
-
-        if (!isPlayed.HasValue)
-        {
-            if (user.HidePlayedInLatest)
-            {
-                isPlayed = false;
-            }
-        }
-
-        var dtoOptions = new DtoOptions { Fields = fields }
-            .AddAdditionalDtoOptions(enableImages, enableUserData, imageTypeLimit, enableImageTypes);
-
-        dtoOptions.PreferEpisodeParentPoster = true;
-
+        var requestUserId = RequestHelpers.GetUserId(User, userId);   // original first line of the body
 ```
+
+One small gap remains for a reviewer to notice. The XML comments above the method still list only `<response code="200">` (line 519). The OpenAPI document gets the 400 status from the attribute, but no description of when it happens. Adding `/// <response code="400">Limit is outside 1..1073741823.</response>` would be the matching documentation change.
 
 ## Course navigation
 

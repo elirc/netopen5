@@ -1,14 +1,36 @@
 # Exercises at both ends of the range
 
-Calculate the largest integer that can be doubled without overflowing a signed 32-bit result. Write down both the accepted value and the immediately following rejected value. Explain why testing only int.MaxValue would miss an off-by-one error in a guard that rejects too many valid values.
+Write each prediction before you check it. Every **Check** uses the focused command from the `jellyfin` folder, `dotnet test tests/Jellyfin.Api.Tests/Jellyfin.Api.Tests.csproj --filter "FullyQualifiedName~UserLibraryLatestMediaTests"`, and a disposable edit you undo with `git checkout -- jellyfin`.
 
-Next, propose an implementation that returns BadRequest only after GetLatestItems runs. Predict which existing test fails and why. Identify the observable difference between returning the correct status and avoiding invalid downstream work.
+## Exercise 1 - The exact upper bound
 
-For the compatibility route, imagine copying the predicate into GetLatestMediaLegacy while removing it from the main method. Which callers become unprotected? Explain why delegation to a single validated method is easier to maintain than independent guards.
+**Goal.** Calculate the largest integer that can be doubled without overflowing a signed 32-bit result. Write down the accepted value and the next value, which is rejected. Explain why testing only `int.MaxValue` would miss an off-by-one guard that rejects *too many* values.
 
-For defaults, compare a test that explicitly passes twenty with one that omits limit. Change the default mentally to twenty-one and predict which test detects it. Repeat for the grouping default.
+**Check.** Change `>` to `>=` in the guard (`jellyfin/Jellyfin.Api/Controllers/UserLibraryController.cs:538`). Predict which `InlineData` row fails (and in which theory) before you run the command.
 
-Finally, design a normal request with a parent identifier, played-state filter, and grouping disabled. List the query fields that must arrive unchanged at the view manager. Separate that forwarding contract from a claim about actual media selection or HTTP model binding, neither of which is established by a controller test with mocked collaborators.
+## Exercise 2 - Reject *before* the work
+
+**Goal.** Imagine an implementation that returns `BadRequest` only after `GetLatestItems` runs. Predict which test fails and why. What is the observable difference between "returns the right status" and "does no invalid downstream work"?
+
+**Check.** Move the `if` block below the `_userManager.GetUserById` call and run the command. Read the failure. Is it an assertion about the result type, or a strict-mock exception?
+
+## Exercise 3 - One guard, two routes
+
+**Goal.** Suppose the predicate were copied into `GetLatestMediaLegacy` and removed from the main method. Which route becomes unprotected? Why is delegation to a single validated method easier to maintain than two guards?
+
+**Check.** `LegacyRoute_UsesTheSameLimitGuard` covers the legacy route and `InvalidLimit_*` covers the main one. Confirm by reading lines 622-638 that the legacy method has no body of its own, only `=> GetLatestMedia(...)`.
+
+## Exercise 4 - Defaults are a contract
+
+**Goal.** Compare a test that passes `20` explicitly with one that omits `limit`. Change the default to `21` in your head and predict which test notices. Do the same for `groupItems = true`.
+
+**Check.** Edit the default in the signature (`jellyfin/Jellyfin.Api/Controllers/UserLibraryController.cs:534`) and run the command. Only one test should fail. Then restore it and flip the `groupItems` default instead.
+
+## Exercise 5 - Forwarding versus selection
+
+**Goal.** Design a normal request with a parent id, a played-state filter and grouping disabled. List the `LatestItemsQuery` fields that must arrive unchanged. Then separate that forwarding contract from two claims the controller test cannot make: which media are actually selected, and how HTTP binds `?limit=abc`.
+
+**Check.** Compare your list with the `It.Is<LatestItemsQuery>(...)` predicate in `ValidLimit_ForwardsFiltersAndReturnsEmptyResults` (test file line 66). Find the one forwarded field that the predicate does *not* check, and decide whether that is a gap.
 
 ## Source excerpt
 
